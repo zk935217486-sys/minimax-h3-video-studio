@@ -43,3 +43,52 @@ $$('.mode-tab').forEach(tab=>tab.addEventListener('click',()=>setMode(tab.datase
 $('#prompt').addEventListener('input',updateAnalysis);$('#enhancePrompt').addEventListener('click',enhance);$('#examplePrompt').addEventListener('click',()=>{$('#prompt').value=examples[Math.floor(Math.random()*examples.length)];updateAnalysis();toast('示例已填入')});$('#generateButton').addEventListener('click',()=>{if(!requireCredits())return;const prompt=$('#prompt').value.trim();if(!prompt||state.mode==='image'&&!state.image)return;spendCredits();startTask()});$('#resetForm').addEventListener('click',resetForm);$('#resolution').addEventListener('change',updateFormat);$('#clearHistory').addEventListener('click',()=>{state.tasks=[];saveTasks();toast('最近创作已清空')});$('#imageUpload').addEventListener('change',event=>{const file=event.target.files[0];if(!file)return;if(file.size>10*1024*1024){toast('图片不能超过 10MB');event.target.value='';return}state.image=file;const reader=new FileReader();reader.onload=event=>{$('#imagePreview img').src=event.target.result;$('#imagePreview').hidden=false};reader.readAsDataURL(file)});$('#removeImage').addEventListener('click',()=>{$('#imageUpload').value='';state.image=null;$('#imagePreview').hidden=true});
 $('#accountButton').addEventListener('click',()=>state.user?toast(`${state.user.email} · 剩余 ${state.user.credits} 点积分`):openAuth());$('#authClose').addEventListener('click',closeAuth);$('#authModal').addEventListener('click',event=>{if(event.target.id==='authModal')closeAuth()});$('#authForm').addEventListener('submit',submitAuth);$('#authSwitch').addEventListener('click',()=>openAuth(state.authMode==='login'?'register':'login'));
 updateAnalysis();updateFormat();renderTasks();renderAccount();
+
+// Set localStorage.minimax-h3-api to the deployed API origin to enable the real backend.
+const API_BASE = (localStorage.getItem('minimax-h3-api') || '').replace(/\/$/, '');
+const API_TOKEN_KEY = 'minimax-h3-api-token';
+async function apiRequest(path, options = {}) {
+  const headers = {'Content-Type':'application/json', ...(options.headers || {})};
+  const token = sessionStorage.getItem(API_TOKEN_KEY);
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`${API_BASE}${path}`, {...options, headers});
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.detail || body.message || `API ${response.status}`);
+  return body;
+}
+async function submitRemoteAuth(event) {
+  event.preventDefault();
+  try {
+    const email = $('#authEmail').value.trim();
+    const password = $('#authPassword').value;
+    const path = state.authMode === 'login' ? '/api/user/login' : '/api/user/register';
+    const body = state.authMode === 'login' ? {account:email, password} : {email, password};
+    const result = await apiRequest(path, {method:'POST', body:JSON.stringify(body)});
+    if (result.token) sessionStorage.setItem(API_TOKEN_KEY, result.token);
+    state.user = result.user || {email, credits:100};
+    closeAuth(); renderAccount(); toast(state.authMode === 'login' ? '登录成功' : '注册成功');
+  } catch (error) { toast(error.message); }
+}
+async function startRemoteTask() {
+  const prompt = $('#prompt').value.trim();
+  if (!prompt) { toast('请先描述一个画面'); return; }
+  if (state.mode === 'image') { toast('图生视频请使用后端上传接口'); return; }
+  const task = {id:`remote-${Date.now()}`, prompt, mode:state.mode, duration:$('#duration').value, resolution:$('#resolution').value, status:'processing', progress:0, createdAt:Date.now()};
+  state.tasks.unshift(task); saveTasks(); $('#stage-empty').hidden=true; $('#stage-result').hidden=true; $('#stage-loading').hidden=false;
+  try {
+    const result = await apiRequest('/api/video/generate', {method:'POST', body:JSON.stringify({type:'text_to_video', prompt, duration:Number(task.duration), resolution:task.resolution, mode:'auto', priority:5})});
+    task.id = result.task_id;
+    for (let attempt=0; attempt<120; attempt += 1) {
+      await new Promise(resolve=>setTimeout(resolve, 1000));
+      const status = await apiRequest(`/api/video/status/${task.id}`);
+      if (status.status === 'completed' || status.status === 'failed') { task.status=status.status === 'completed'?'done':'failed'; task.progress=100; task.videoUrl=status.video_url; break; }
+      task.progress = Math.min(95, task.progress + 5); renderTasks();
+    }
+    saveTasks(); $('#stage-loading').hidden=true; $('#stage-result').hidden=task.status!=='done'; $('#stage-empty').hidden=task.status==='done'; $('#generateButton').disabled=false;
+    if (task.status === 'done') { $('#resultCaption').textContent=task.prompt; $('#previewShot').textContent='H3 任务已完成'; toast('MiniMax H3 任务已完成'); } else toast('任务失败，请查看历史记录');
+  } catch (error) { task.status='failed'; saveTasks(); $('#stage-loading').hidden=true; $('#stage-empty').hidden=false; $('#generateButton').disabled=false; toast(error.message); }
+}
+if (API_BASE) {
+  $('#authForm').addEventListener('submit', submitRemoteAuth, true);
+  $('#generateButton').addEventListener('click', event=>{event.stopImmediatePropagation(); if (state.user || sessionStorage.getItem(API_TOKEN_KEY)) startRemoteTask(); else openAuth();}, true);
+}
