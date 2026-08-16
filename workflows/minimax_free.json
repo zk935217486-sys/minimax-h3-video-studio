@@ -1,0 +1,13 @@
+{
+  "prompt": {
+    "1": {
+      "class_type": "MiniMaxT2V",
+      "inputs": {
+        "prompt": "",
+        "duration": 6,
+        "resolution": "1080p",
+        "cookies": ""
+      }
+    }
+  }
+}
