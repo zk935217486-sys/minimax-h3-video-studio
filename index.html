@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111417">
+  <title>MiniMax H3 · AI 视频工作台</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="MiniMax H3 首页">
+      <span class="brand-mark" aria-hidden="true">H3</span>
+      <span><strong>MiniMax H3</strong><small>AI VIDEO STUDIO</small></span>
+    </a>
+    <div class="topbar-meta">
+      <span class="status-dot"><i></i>演示引擎在线</span>
+      <button class="icon-button" id="clearHistory" title="清空历史记录" aria-label="清空历史记录">⌫</button>
+      <button class="account-button" id="accountButton"><span id="accountLabel">登录 / 注册</span><b id="accountAvatar">→</b></button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="intro-row">
+      <div>
+        <p class="eyebrow">CREATE / 01</p>
+        <h1>把一个念头，<em>拍成</em>一幕。</h1>
+        <p class="lede">用自然语言描述画面，MiniMax H3 会替你整理镜头、节奏和风格。先从一个小场景开始。</p>
+      </div>
+      <div class="quota"><span>账户积分余额</span><strong><span id="creditBalance">100</span> <small>/ 初始积分</small></strong><div class="quota-bar"><i id="creditBar"></i></div></div>
+    </section>
+
+    <div class="workspace-grid">
+      <section class="panel composer-panel" aria-labelledby="composerTitle">
+        <div class="panel-heading"><div><span class="panel-index">01</span><h2 id="composerTitle">新建创作</h2></div><span class="autosave">自动保存</span></div>
+        <div class="mode-switch" role="tablist" aria-label="创作类型">
+          <button class="mode-tab active" data-mode="text" role="tab" aria-selected="true"><span class="tab-glyph">T</span>文生视频</button>
+          <button class="mode-tab" data-mode="image" role="tab" aria-selected="false"><span class="tab-glyph">▧</span>图生视频</button>
+        </div>
+
+        <div class="field image-field" id="imageField" hidden>
+          <label for="imageUpload">参考画面</label>
+          <label class="upload-zone" for="imageUpload"><span class="upload-icon">＋</span><span><strong>拖入一张图片</strong><small>PNG / JPG，最大 10MB</small></span><input id="imageUpload" type="file" accept="image/png,image/jpeg"></label>
+          <div class="image-preview" id="imagePreview" hidden><img alt="已上传的参考画面"><button type="button" id="removeImage">移除</button></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label-row"><label for="prompt">画面描述</label><button class="text-button" id="examplePrompt">填入示例</button></div>
+          <textarea id="prompt" rows="5" placeholder="例如：清晨的海边，一列白色火车沿着悬崖缓慢驶过，阳光从云层间洒下……"></textarea>
+          <div class="prompt-footer"><span id="charCount">0 / 500</span><button class="enhance-button" id="enhancePrompt"><span>✦</span> 智能增强</button></div>
+        </div>
+
+        <div class="skill-strip" id="skillStrip"><span class="spark">✦</span><div><small>已识别创作意图</small><strong id="skillName">等待描述画面</strong></div><span class="skill-chip" id="skillChip">—</span></div>
+
+        <div class="controls-grid">
+          <div class="field"><label for="style">视觉风格</label><select id="style"><option value="cinematic">电影质感</option><option value="documentary">纪实胶片</option><option value="anime">手绘动画</option><option value="commercial">商业广告</option></select></div>
+          <div class="field"><label for="camera">镜头运动</label><select id="camera"><option value="slow_push">缓慢推进</option><option value="tracking">跟随主体</option><option value="orbit">环绕拍摄</option><option value="aerial">航拍俯瞰</option></select></div>
+          <div class="field"><label for="duration">时长</label><select id="duration"><option value="5">5 秒</option><option value="10">10 秒</option><option value="15">15 秒</option></select></div>
+          <div class="field"><label for="resolution">输出画幅</label><select id="resolution"><option value="16:9">横屏 16:9</option><option value="9:16">竖屏 9:16</option><option value="1:1">方形 1:1</option></select></div>
+        </div>
+
+        <div class="form-actions"><button class="ghost-button" id="resetForm">重置</button><button class="primary-button" id="generateButton"><span>生成预览</span><b>↗</b></button></div>
+      </section>
+
+      <section class="panel preview-panel" aria-labelledby="previewTitle">
+        <div class="panel-heading"><div><span class="panel-index">02</span><h2 id="previewTitle">预览画布</h2></div><span class="preview-format" id="previewFormat">16:9 · 1080p</span></div>
+        <div class="preview-stage" id="previewStage"><div class="stage-grid"></div><div class="stage-empty"><span class="stage-icon">◌</span><strong>你的画面会出现在这里</strong><small>描述一个场景，开始第一次生成</small></div><div class="stage-loading" hidden><div class="loader-ring"></div><strong>正在整理镜头语言</strong><small id="loadingText">分析画面构成 · 0%</small></div><div class="stage-result" hidden><div class="result-label">DEMO PREVIEW</div><div class="result-scene" id="resultScene"></div><div class="result-caption" id="resultCaption"></div></div><button class="fullscreen-button" title="放大预览" aria-label="放大预览">⤢</button></div>
+        <div class="preview-foot"><div><span class="mini-label">当前镜头</span><strong id="previewShot">等待生成</strong></div><div><span class="mini-label">引擎</span><strong>MiniMax H3 · Demo</strong></div></div>
+      </section>
+    </div>
+
+    <section class="tasks-section" aria-labelledby="tasksTitle"><div class="section-heading"><div><p class="eyebrow">QUEUE / 02</p><h2 id="tasksTitle">最近创作</h2></div><span id="taskCount">0 个任务</span></div><div class="task-list" id="taskList"><div class="empty-tasks" id="emptyTasks"><span>○</span><div><strong>还没有生成记录</strong><p>完成一次创作后，任务会出现在这里。</p></div></div></div></section>
+  </main>
+  <div class="auth-modal" id="authModal" hidden>
+    <div class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button class="auth-close" id="authClose" aria-label="关闭">×</button>
+      <p class="eyebrow">ACCOUNT / 03</p><h2 id="authTitle">登录 MiniMax H3</h2>
+      <p class="auth-note" id="authNote">登录后保存创作记录，并使用你的积分。</p>
+      <form id="authForm">
+        <div class="field"><label for="authEmail">邮箱</label><input id="authEmail" type="email" required placeholder="name@example.com"></div>
+        <div class="field"><label for="authPassword">密码</label><input id="authPassword" type="password" minlength="6" required placeholder="至少 6 位字符"></div>
+        <button class="primary-button auth-submit" type="submit" id="authSubmit">登录 <b>↗</b></button>
+      </form>
+      <button class="auth-switch" id="authSwitch">还没有账户？注册一个</button>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
