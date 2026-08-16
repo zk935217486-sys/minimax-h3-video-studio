@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+data/*.sqlite3
+data/uploads/
+data/videos/
+logs/
+fastapi-install-guide*.png
